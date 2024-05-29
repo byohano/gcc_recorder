@@ -1,4 +1,14 @@
 from typing import List
+import struct
+import sys
+
+def _get_endianness():
+    if sys.byteorder == "little":
+        return "<"
+    elif sys.byteorder == "big":
+        return ">"
+    else:
+        raise ValueError(f"Not a valid endiannes : {sys.byteorder}")
 
 
 class PacketData:
@@ -53,7 +63,7 @@ class Player:
 
     def parse_packet(self, packet: PacketData):
         self.timestamp = packet.timestamp
-        data = packet.player_data[self.port]
+        data = struct.unpack(f'{_get_endianness()}BBBBBBBBB', packet.player_data[self.port])
         self.check_connection(data)
         self.set_face_buttons(data)
         self.set_other_buttons(data)
@@ -66,81 +76,85 @@ class Player:
         self.set_r_pressure(data)
 
     def check_connection(self, data: List[str]) -> None:
-        self.is_connected = (data[0][0] == "1")
+        #self.is_connected = (data[0][0] == "1")
+        self.is_connected = (data[0] > 16)
 
     def set_left_stick_x(self, data: List[str]) -> None:
-        bval: str = data[3]
-        self.left_stick_x = int(bval, 16)
+        #bval: str = data[3]
+        #self.left_stick_x = int(bval, 16)
+        self.left_stick_x = data[3]
 
     def set_left_stick_y(self, data: List[str]) -> None:
-        bval: str = data[4]
-        self.left_stick_y = int(bval, 16)
+        #bval: str = data[4]
+        #self.left_stick_y = int(bval, 16)
+        self.left_stick_y = data[4]
 
     def set_c_stick_x(self, data: List[str]) -> None:
-        bval: str = data[5]
-        self.c_stick_x = int(bval, 16)
+        #bval: str = data[5]
+        #self.c_stick_x = int(bval, 16)
+        self.c_stick_x = data[5]
 
     def set_c_stick_y(self, data: List[str]) -> None:
-        bval: str = data[6]
-        self.c_stick_y = int(bval, 16)
+        #bval: str = data[6]
+        #self.c_stick_y = int(bval, 16)
+        self.c_stick_y = data[6]
 
     def set_dpad(self, data: List[str]) -> None:
-        bval: str = data[1][0]
-        dval: int = int(bval, 16)
+        val: str = (int(data[1]) - 16) % 16
         rem: int
 
-        rem = dval % 2
-        dval = (dval - rem) / 2
+        rem = val % 2
+        val = (val - rem) / 2
         self.dpad_left = rem
-        rem = dval % 2
-        dval = (dval - rem) / 2
+        rem = val % 2
+        val = (val - rem) / 2
         self.dpad_right = rem
-        rem = dval % 2
-        dval = (dval - rem) / 2
+        rem = val % 2
+        val = (val - rem) / 2
         self.dpad_up = rem
-        rem = dval % 2
-        dval = (dval - rem) / 2
+        rem = val % 2
+        val = (val - rem) / 2
         self.dpad_down = rem
 
     def set_face_buttons(self, data: List[str]) -> None:
-        bval: str = data[1][1]
-        dval: int = int(bval, 16)
+        val: str = data[1] % 16
         rem: int
 
-        rem = dval % 2
-        dval = (dval - rem) / 2
+        rem = val % 2
+        val = (val - rem) / 2
         self.a = rem
-        rem = dval % 2
-        dval = (dval - rem) / 2
+        rem = val % 2
+        val = (val - rem) / 2
         self.b = rem
-        rem = dval % 2
-        dval = (dval - rem) / 2
+        rem = val % 2
+        val = (val - rem) / 2
         self.x = rem
-        rem = dval % 2
-        dval = (dval - rem) / 2
+        rem = val % 2
+        val = (val - rem) / 2
         self.y = rem
 
     def set_other_buttons(self, data: List[str]) -> None:
-        bval: str = data[2][1]
-        dval: int = int(bval, 16)
+        val: str = data[2] % 16
         rem: int
 
-        rem = dval % 2
-        dval = (dval - rem) / 2
+        rem = val % 2
+        val = (val - rem) / 2
         self.start = rem
-        rem = dval % 2
+        rem = val % 2
         self.z = rem
-        rem = dval % 2
+        rem = val % 2
         self.r = rem
-        rem = dval % 2
-        dval = (dval - rem) / 2
+        rem = val % 2
+        val = (val - rem) / 2
         self.l = rem
 
     def set_l_pressure(self, data: List[str]) -> None:
-        bval: str = data[7]
-        self.l_pressure = int(bval, 16)
+        #bval: str = data[7]
+        #self.l_pressure = int(bval, 16)
+        self.l_pressure = data[7]
 
     def set_r_pressure(self, data: List[str]) -> None:
-        bval: str = data[8]
-        self.r_pressure = int(bval, 16)
+        #bval: str = data[8]
+        #self.r_pressure = int(bval, 16)
+        self.r_pressure = data[8]
 

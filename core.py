@@ -1,4 +1,3 @@
-import mmap
 import io
 import struct
 import time
@@ -11,7 +10,7 @@ import tempfile
 import shutil
 import os
 
-from gc_conversion import *
+from gc_conversion import _get_endianness, PacketData, Player
 
 SLEEP_TIME = 0.01
 
@@ -44,11 +43,9 @@ def set_log_verbosity(verbose_log):
 class App:
 
     def __init__(self, device_number, bus_number, player_port, output_file, duration):
-        self.q_stream, self.q_stream_lock = [], Lock()
-        self.q_packet, self.q_packet_lock = [], Lock()
+        self.q_stream, self.q_stream_lock = bytearray(), Lock()
         self.q_input, self.q_input_lock = [], Lock()
         self.end_capture = Event()
-        self.end_stream = Event()
         self.end_packet = Event()
         self.abort_signal = Event()
         self.device_number = 7
@@ -57,9 +54,6 @@ class App:
         self.output_file = output_file
         self.duration = duration
         self.player_port = player_port
-
-    def _read_data(self, arr):
-        return int("".join(reversed(arr)), 16)
 
     def _handle_exception(self, exc):
         logger.error(exc)
@@ -79,146 +73,115 @@ class App:
                     if self.abort_signal.is_set():
                         logger.info("abort record")
                         return
-                    elif self.q_input:
-                        with self.q_input_lock:
-                            items, self.q_input = self.q_input, []
-                        for elmt in items:
-                            logger.info("recording data")
-                            if not epoch:
-                                epoch = elmt.timestamp
-                            elmt.timestamp -= epoch
-                            elmt.timestamp = round(elmt.timestamp, 6)
-                            logger.info(f"record timestamp {elmt.timestamp}")
-                            player.parse_packet(elmt)
-                            if not player.is_connected:
-                                logger.warning(f"Player n°{player.port} isn't connected, empty data will be written.")
-                            fic.write(str(player) + os.linesep)
-                        logger.info("pause recording")
-                        time.sleep(SLEEP_TIME)
-                    elif self.end_packet.is_set():
-                        logger.info("no more data, stop record")
-                        break
-                    else:
-                        logger.info("waiting for data")
-                        time.sleep(SLEEP_TIME)
+                    with self.q_input_lock:
+                        items, self.q_input = self.q_input, []
+                    if not items:
+                        if self.end_packet.is_set():
+                            logger.info("no more data, stop record")
+                            break
+                        else:
+                            logger.info("waiting for data")
+                            time.sleep(SLEEP_TIME)
+                            continue
+                    for elmt in items:
+                        logger.info("recording data")
+                        if not epoch:
+                            epoch = elmt.timestamp
+                        elmt.timestamp -= epoch
+                        elmt.timestamp = round(elmt.timestamp, 6)
+                        logger.info(f"record timestamp {elmt.timestamp}")
+                        player.parse_packet(elmt)
+                        if not player.is_connected:
+                            logger.warning(f"Player n°{player.port} isn't connected, empty data will be written.")
+                        fic.write(str(player) + os.linesep)
+                    logger.info("pause recording")
+                    time.sleep(SLEEP_TIME)
             except Exception as exc:
                 logger.error("Runtime exception, aborting")
                 self._handle_exception(exc)
-        logger.error(f"q_packet size : {len(self.q_packet)}")
+            #logger.info("copy temp data to final file")
+            #shutil.copyfile(fic.name, self.output_file)
 
-    def filter_data(self):
-        items = []
-        time_start = None
-        input_truck = []
-        try:
-            while True:
-                if self.abort_signal.is_set():
-                    logger.info("abort analysis")
-                    return
-                elif self.q_packet:
-                    logger.info("filter attempt")
-                    with self.q_packet_lock:
-                        items, self.q_packet = self.q_packet, []
-                    for elmt in items:
-                        logger.debug(f"{elmt} at {time.time()}")
-                        device_number = int(elmt[11])
-                        logger.debug(f"device number, {device_number}")
-                        if device_number != self.device_number:
-                            logger.info("wrong device, discarding")
-                            continue
-                        urb_type = int(elmt[8])
-                        logger.debug(f"urb type, {urb_type}")
-                        if urb_type != 43:
-                            logger.info("not a data packet, discarding")
-                            continue
-                        data_length = self._read_data(elmt[36:40])
-                        sec, usec = self._read_data(elmt[16:24]), self._read_data(elmt[24:28])
-                        packet_time = float(f"{sec}.{str(usec).zfill(6)}")
-                        logger.debug(f"packet time, {packet_time}")
-                        input_truck.append(PacketData(packet_time, elmt[-(data_length-1):]))
-                        logger.info("filter passed")
-                        if not time_start:
-                            time_start = packet_time
-                        elif packet_time - time_start > self.duration:
-                            if self.end_capture.is_set():
-                                break
-                            logger.info("last packet processed, signal end of capture")
-                            self.end_capture.set()
-                        with self.q_input_lock:
-                            self.q_input += input_truck
-                        logger.info("input truck sent")
-                        input_truck = []
-                elif self.end_stream.is_set():
-                    logger.info("capture ended, stop filter")
-                    self.end_packet.set()
-                    break
-                else:
-                    logger.info("no packet to filter, waiting")
-                    time.sleep(SLEEP_TIME)
-            logger.debug(f"time start, {time_start}")
-        except Exception as exc:
-            logger.error("Runtime exception, aborting")
-            self._handle_exception(exc)
-        logger.error(f"q_input size : {len(self.q_input)}")
-        logger.error(f"q_packet size : {len(self.q_packet)}")
 
     def format_packet(self):
-        items = []
-        workspace = []
-        packet_truck = []
+        items = b''
+        workspace = b''
+        input_truck = []
         default_length = 48
+        time_start = None
         try:
             while True:
                 if self.abort_signal.is_set():
                     logger.info("abort packing")
                     return
-                elif self.q_stream:
-                    logger.info("packing attempt")
-                    with self.q_stream_lock:
-                        items, self.q_stream = self.q_stream, []
-                    workspace += [f'{c:x}'.zfill(2) for elmt in items for c in elmt]
-                    i = 0
-                    while i < len(workspace):
-                        if (len(workspace) - i) < default_length:
-                            logger.info("not enough core packet data")
-                            break
-                        bus_id = self._read_data(workspace[i+12:i+14])
-                        logger.debug(f"bus_id, {bus_id}")
-                        if bus_id != self.bus_number:  # Hard code
-                            logger.error("Wrong bus id at expected location, data stream is incomplete/misaligned! Aborting.")
-                            self.abort_signal.set()
-                            break
-                        packet_length = default_length
-                        transfer_type = int(workspace[i+9])
-                        logger.debug(f"transfer type, {transfer_type}")
-                        if transfer_type == 0:  # ISO request
-                            packet_length += 16
-                        data_length = self._read_data(workspace[i+36:i+40])
-                        logger.debug(f"data length, {data_length}")
-                        packet_length += data_length
-                        if (len(workspace) - i) < packet_length:
-                            logger.info("incomplete packet data, wait")
-                            break
-                        packet_truck.append(workspace[i:i+packet_length])
-                        logger.info("packet made")
+                with self.q_stream_lock:
+                    items, self.q_stream = bytes(self.q_stream), bytearray()
+                if not items:
+                    if self.end_capture.is_set():
+                        logger.info("capture ended, stop packing")
+                        self.end_packet.set()
+                        break
+                    else:
+                        logger.info("empty, waiting for packing")
+                        time.sleep(SLEEP_TIME)
+                        continue
+                logger.info("packing attempt")
+                #logger.debug(f"items, {items}")
+                workspace += items
+                i = 0
+                while i < len(workspace):
+                    #logger.debug(f"workspace, {workspace[:100]}")
+                    if (len(workspace) - i) < default_length:
+                        logger.info("not enough core packet data")
+                        break
+                    binary_data = struct.unpack(f'{_get_endianness()}QBBBBHBBQLLLLQ', workspace[i:i+default_length])
+                    logger.info(f"binary data, {binary_data}")
+                    bus_id = binary_data[5]
+                    logger.debug(f"bus_id, {bus_id}")
+                    if bus_id != self.bus_number:  # Hard code
+                        logger.error("Wrong bus id at expected location, data stream is incomplete/misaligned! Aborting.")
+                        self.abort_signal.set()
+                        break
+                    packet_length = default_length
+                    transfer_type = binary_data[2]
+                    logger.debug(f"transfer type, {transfer_type}")
+                    if transfer_type == 0:  # ISO request
+                        packet_length += 16
+                    data_length = binary_data[12]
+                    logger.debug(f"data length, {data_length}")
+                    if data_length == 0:
+                        logger.info("not a data packet, skipping")
                         i += packet_length
-                    workspace = workspace[i:]
-                    with self.q_packet_lock:
-                        self.q_packet += packet_truck
-                    packet_truck = []
-                    logger.info("packet truck sent")
-                elif self.end_capture.is_set():
-                    logger.info("capture ended, stop packing")
-                    self.end_stream.set()
-                    break
-                else:
-                    logger.info("empty, waiting for packing")
-                    time.sleep(SLEEP_TIME)
+                        continue
+                    packet_length += data_length
+                    if (len(workspace) - i) < packet_length:
+                        logger.info("incomplete packet data, wait")
+                        break
+                    device_number = binary_data[4]
+                    logger.debug(f"device number, {device_number}")
+                    if device_number != self.device_number:
+                        logger.info("wrong device, discarding")
+                        i += packet_length
+                        continue
+                    sec, usec = binary_data[8], binary_data[9]
+                    packet_time = float(f"{sec}.{str(usec).zfill(6)}")
+                    logger.debug(f"packet time, {packet_time}")
+                    input_truck.append(PacketData(packet_time, workspace[i+packet_length-data_length+1:i+packet_length]))
+                    i += packet_length
+                    logger.info("packet made")
+                    if not time_start:
+                        time_start = packet_time
+                    if (packet_time - time_start) > self.duration:
+                        logger.info("duration exceeded, discarding remaining packets")
+                        break
+                workspace = workspace[i:]
+                with self.q_input_lock:
+                    self.q_input += input_truck
+                logger.info("packet truck sent")
+                input_truck = []
         except Exception as exc:
             logger.error("Runtime exception, aborting")
             self._handle_exception(exc)
-        logger.error(f"q_stream size : {len(self.q_stream)}")
-        logger.error(f"q_input size : {len(self.q_input)}")
 
     def read_stream(self):
         try:
@@ -234,9 +197,8 @@ class App:
                         elif self.end_capture.is_set():
                             logger.info("capture ended, stop reading")
                             break
-                        elif s.peek(1):
-                            with self.q_stream_lock:
-                                self.q_stream.append(s.read(io.DEFAULT_BUFFER_SIZE))
+                        with self.q_stream_lock:
+                            self.q_stream.extend(s.read(io.DEFAULT_BUFFER_SIZE))
                         if time.time() - time_start > self.duration:
                             logger.info("duration exceeded, stop capture")
                             self.end_capture.set()
@@ -247,8 +209,6 @@ class App:
         except PermissionError as perm_exc:
             logger.error("Insufficient permission for reading usbmon character device, aborting.")
             self._handle_exception(perm_exc)
-        logger.error(f"q_stream size : {len(self.q_stream)}")
-
         if not self.abort_signal.is_set():
             print("Capture finished, pending final processing...")
 
@@ -258,17 +218,14 @@ class App:
 
         read_thread = Thread(target=self.read_stream, name="read_thread")
         packet_thread = Thread(target=self.format_packet, name="packet_thread")
-        filter_thread = Thread(target=self.filter_data, name="filter_thread")
         record_thread = Thread(target=self.record_data, name="record_thread")
 
         read_thread.start()
         packet_thread.start()
-        filter_thread.start()
         record_thread.start()
 
         read_thread.join()
         packet_thread.join()
-        filter_thread.join()
         record_thread.join()
 
         if self.abort_signal.is_set():
