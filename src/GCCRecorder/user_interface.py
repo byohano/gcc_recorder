@@ -22,10 +22,15 @@ import re
 import time
 from pathlib import Path
 import questionary as qrt
-from core import App
+from src.GCCRecorder.core import App
 import click
+import user_interface
 
 from typing import Union
+
+#script_dir = os.path.dirname(__file__)
+#project_root = os.path.abspath(os.path.join(script_dir, os.pardir))
+#sys.path.append(project_root)
 
 def positive_int_validation(text: str) -> Union[str, bool]:
     """

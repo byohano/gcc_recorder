@@ -10,7 +10,7 @@ import tempfile
 import shutil
 import os
 
-from gc_conversion import _get_endianness, PacketData, Player
+from src.GCCRecorder.gc_conversion import _get_endianness, PacketData, Player
 
 SLEEP_TIME = 0.01
 
