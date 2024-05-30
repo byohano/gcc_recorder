@@ -1,3 +1,22 @@
+"""
+user_interface.py: Manages interactions with the user, and redirects inputs to appropriate code objects elsewhere.
+
+Currently, the only supported interface for using the application is through the terminal.
+
+Methods:
+    positive_int_validation: Validation function for positive integers, used by "questionary".
+    positive_int_callback: Validation callback for positive integers, used by "click".
+    positive_float_validation: Validation function for floats, used by "questionary".
+    positive_float_callback: Validation callback for floats, used by "click".
+    port_validation: Validation function for port numbers (1 to 4), used by "questionary".
+    port_callback: Validation callback for port numbers (1 to 4), used by "click".
+
+Click methods:
+    cli: Main command group.
+    interactive_prompt: Starts the application using an interactive prompt as input.
+    flag_command: Starts the application using command-line flag as input.
+"""
+
 import os
 import re
 import time
@@ -9,6 +28,15 @@ import click
 from typing import Union
 
 def positive_int_validation(text: str) -> Union[str, bool]:
+    """
+    Validation function for positive integers, used by "questionary".
+
+    Arguments:
+        text (str): Input text to validate.
+
+    Returns:
+        True if the text is valid, a string explaining why it's invalid otherwise.
+    """
     if not text:
         return "Empty string"
     if re.search("[^0-9]", text):
@@ -18,7 +46,19 @@ def positive_int_validation(text: str) -> Union[str, bool]:
     else:
         return True
 
-def positive_int_callback(ctx, param, value):
+def positive_int_callback(ctx, param, value) -> int:
+    """
+    Validation callback for positive integers, used by "click".
+
+    Arguments:
+        ctx: Command-line context.
+        param: Command-line parameter affected by the callback.
+        value: Value of the parameter under test.
+    Returns:
+        Sanitized input.
+    Raises:
+        click.BadParameter if the value is forbidden.
+    """
     try:
         if int(value) <= 0:
             raise click.BadParameter("Should be a strictly positive integer")
@@ -27,6 +67,16 @@ def positive_int_callback(ctx, param, value):
     return int(value)
 
 def positive_float_validation(text: str, strict: bool = True) -> Union[str, bool]:
+    """
+    Validation function for floats, used by "questionary".
+
+    Arguments:
+        text (str): Input text to validate.
+        strict (bool): Allows 0 if true.
+    Returns:
+        True if the text is valid, a string explaining why it's invalid otherwise.
+    """
+
     if re.search("[^0-9\.]", text):
         return "Only numbers (0-9) and one dot allowed"
     elif text.count(".") > 1:
@@ -38,7 +88,20 @@ def positive_float_validation(text: str, strict: bool = True) -> Union[str, bool
     else:
         return True
 
-def positive_float_callback(ctx, param, value, strict: bool = True):
+def positive_float_callback(ctx, param, value, strict: bool = True) -> float:
+    """
+    Validation callback for floats, used by "click".
+
+    Arguments:
+        ctx: Command-line context.
+        param: Command-line parameter affected by the callback.
+        value: Value of the parameter under test.
+        strict (bool): Allows 0 if true.
+    Returns:
+        Sanitized input.
+    Raises:
+        click.BadParameter if the value is forbidden.
+    """
     try:
         if float(value) < 0:
             raise click.BadParameter("Should be a positive real number")
@@ -49,6 +112,14 @@ def positive_float_callback(ctx, param, value, strict: bool = True):
     return float(value)
 
 def port_validation(text: str) -> Union[str, bool]:
+    """
+    Validation function for port numbers (1 to 4), used by "questionary".
+
+    Arguments:
+        text (str): Input text to validate.
+    Returns:
+        True if the text is valid, a string explaining why it's invalid otherwise.
+    """
     if not text:
         return "Empty string"
     if re.search("[^0-9]", text):
@@ -59,6 +130,18 @@ def port_validation(text: str) -> Union[str, bool]:
         return True
 
 def port_callback(ctx, param, value):
+    """
+    Validation callback for port numbers (1 to 4), used by "click".
+
+    Arguments:
+        ctx: Command-line context.
+        param: Command-line parameter affected by the callback.
+        value: Value of the parameter under test.
+    Returns:
+        Sanitized input.
+    Raises:
+        click.BadParameter if the value is forbidden.
+    """
     try:
         if int(value) < 1 or int(value) > 4:
             raise click.BadParameter("Should be an integer between 1 and 4")
@@ -69,14 +152,21 @@ def port_callback(ctx, param, value):
 
 @click.group(help="Captures USB traffic from a Gamecube controller adapter, and converts its data into a human readable format")
 def cli():
-    pass
+    """
+    Main command group.
+    """
 
 @cli.command(help="Enter capture configuration through an interactive prompt in the terminal")
 @click.option(
     "--verbose", "-v", "arg_verbose", default=False, count=True, help="Log verbosity level"
 )
 def interactive_prompt(arg_verbose):
+    """
+    Starts the application using an interactive prompt as input.
 
+    Arguments:
+        arg_verbose: Value of the "--verbose" count flag.
+    """
     user_input = qrt.text("Enter bus number : ", validate=positive_int_validation).ask()
     if not user_input:
         exit(1)
@@ -137,9 +227,21 @@ def interactive_prompt(arg_verbose):
     "--capture-time", "-c", "arg_capture_time", required=True, type=float, callback=lambda ctx, param, value: positive_float_callback(ctx, param, value, True), help="Duration of packet capture"
 )
 @click.option(
-    "--wait-time", "-w", "arg_wait_time", required=False, type=float, default=0.0, callback=lambda ctx, param, value: positive_float_callback(ctx, param, value, False), help="Wait time before starting capture"
+    "--wait-time", "-w", "arg_wait_time", required=False, type=float, default=0.0, callback=lambda ctx, param, value: positive_float_callback(ctx, param, value, False), help="Wait time before starting capture (default = 0)"
 )
 def flag_command(arg_verbose, arg_bus, arg_device, arg_port, arg_output, arg_capture_time, arg_wait_time):
+    """
+    Starts the application using command-line flag as input.
+
+    Arguments:
+        arg_verbose: Value of the "--verbose" count flag.
+        arg_bus: Value of the "--bus" option.
+        arg_device: Value of the "--device" option.
+        arg_port: Value of the "--port" option.
+        arg_output: Value of the "--output" option.
+        arg_capture_time: Value of the "--capture-time" option.
+        arg_wait_time: Value of the "--wait-time" option.
+    """
     if not Path(f"/dev/usbmon{arg_bus}").exists():
         print(f"usbmon pipe for bus number {arg_bus} \"/dev/usbmon{arg_bus}\" can't be found. Have you activated usbmon?")
         exit(7)
