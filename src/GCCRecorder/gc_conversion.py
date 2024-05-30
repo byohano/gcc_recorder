@@ -8,7 +8,7 @@ def _get_endianness():
     elif sys.byteorder == "big":
         return ">"
     else:
-        raise ValueError(f"Not a valid endiannes : {sys.byteorder}")
+        raise ValueError(f"Not a valid endianness : {sys.byteorder}")
 
 
 class PacketData:

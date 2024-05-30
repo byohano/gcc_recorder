@@ -16,7 +16,7 @@ from src.GCCRecorder.usb_stream_recorder import BasicUsbStreamRecorder
 
 SLEEP_TIME = 0.01
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("core")
 logger.setLevel(logging.DEBUG)
 file_handler = logging.FileHandler("core.log")
 file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - [%(threadName)s] %(message)s')
