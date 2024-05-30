@@ -48,8 +48,8 @@ class App:
         self.end_capture = Event()
         self.end_packet = Event()
         self.abort_signal = Event()
-        self.device_number = 7
-        self.bus_number = 3
+        self.device_number = device_number
+        self.bus_number = bus_number
         self.usbmon_file = f"/dev/usbmon{self.bus_number}"
         self.output_file = output_file
         self.duration = duration
