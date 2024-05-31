@@ -190,7 +190,6 @@ class CaptureData:
         Arguments:
             data: Full input data from a port as bytes.
         """
-        #self.is_connected = (data[0][0] == "1")
         self.is_connected = (data[0] > 16)
 
     def set_left_stick_x(self, data: List[str]) -> None:
@@ -202,8 +201,6 @@ class CaptureData:
         Arguments:
             data: Full input data from a port as bytes.
         """
-        #bval: str = data[3]
-        #self.left_stick_x = int(bval, 16)
         self.left_stick_x = data[3]
 
     def set_left_stick_y(self, data: List[str]) -> None:
@@ -215,8 +212,6 @@ class CaptureData:
         Arguments:
             data: Full input data from a port as bytes.
         """
-        #bval: str = data[4]
-        #self.left_stick_y = int(bval, 16)
         self.left_stick_y = data[4]
 
     def set_c_stick_x(self, data: List[str]) -> None:
@@ -228,8 +223,6 @@ class CaptureData:
         Arguments:
             data: Full input data from a port as bytes.
         """
-        #bval: str = data[5]
-        #self.c_stick_x = int(bval, 16)
         self.c_stick_x = data[5]
 
     def set_c_stick_y(self, data: List[str]) -> None:
@@ -241,12 +234,9 @@ class CaptureData:
         Arguments:
             data: Full input data from a port as bytes.
         """
-        #bval: str = data[6]
-        #self.c_stick_y = int(bval, 16)
         self.c_stick_y = data[6]
 
     def set_dpad(self, data: List[str]) -> None:
-        val: str = (int(data[1]) - 16) % 16
         """
         Parse DPad data.
 
@@ -260,20 +250,15 @@ class CaptureData:
         Arguments:
             data: Full input data from a port as bytes.
         """
-        rem: int
+        val: int = data[1] // 16  # Floor division operator
 
-        rem = val % 2
-        val = (val - rem) / 2
-        self.dpad_left = rem
-        rem = val % 2
-        val = (val - rem) / 2
-        self.dpad_right = rem
-        rem = val % 2
-        val = (val - rem) / 2
-        self.dpad_up = rem
-        rem = val % 2
-        val = (val - rem) / 2
-        self.dpad_down = rem
+        self.dpad_left = val % 2
+        val //= 2
+        self.dpad_right = val % 2
+        val //= 2
+        self.dpad_up = val % 2
+        val //= 2
+        self.dpad_down = val % 2
 
     def set_face_buttons(self, data: List[str]) -> None:
         """
@@ -289,21 +274,15 @@ class CaptureData:
         Arguments:
             data: Full input data from a port as bytes.
         """
-        val: str = data[1] % 16
-        rem: int
+        val: int = data[1] % 16
 
-        rem = val % 2
-        val = (val - rem) / 2
-        self.a = rem
-        rem = val % 2
-        val = (val - rem) / 2
-        self.b = rem
-        rem = val % 2
-        val = (val - rem) / 2
-        self.x = rem
-        rem = val % 2
-        val = (val - rem) / 2
-        self.y = rem
+        self.a = val % 2
+        val //= 2
+        self.b = val % 2
+        val //= 2
+        self.x = val % 2
+        val //= 2
+        self.y = val % 2
 
     def set_other_buttons(self, data: List[str]) -> None:
         """
@@ -319,19 +298,15 @@ class CaptureData:
         Arguments:
             data: Full input data from a port as bytes.
         """
-        val: str = data[2] % 16
-        rem: int
+        val: int = data[2] % 16
 
-        rem = val % 2
-        val = (val - rem) / 2
-        self.start = rem
-        rem = val % 2
-        self.z = rem
-        rem = val % 2
-        self.r = rem
-        rem = val % 2
-        val = (val - rem) / 2
-        self.l = rem
+        self.start = val % 2
+        val //= 2
+        self.z = val % 2
+        val //= 2
+        self.r = val % 2
+        val //= 2
+        self.l = val % 2
 
     def set_l_pressure(self, data: List[str]) -> None:
         """
@@ -342,8 +317,6 @@ class CaptureData:
         Arguments:
             data: Full input data from a port as bytes.
         """
-        #bval: str = data[7]
-        #self.l_pressure = int(bval, 16)
         self.l_pressure = data[7]
 
     def set_r_pressure(self, data: List[str]) -> None:
@@ -355,7 +328,5 @@ class CaptureData:
         Arguments:
             data: Full input data from a port as bytes.
         """
-        #bval: str = data[8]
-        #self.r_pressure = int(bval, 16)
         self.r_pressure = data[8]
 
