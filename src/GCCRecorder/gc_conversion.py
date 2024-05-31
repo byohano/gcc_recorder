@@ -244,8 +244,8 @@ class CaptureData:
         Its value is the sum of each individual input's code value :
         - DPad left = 1
         - DPad right = 2
-        - DPad up = 4
-        - DPad down = 8
+        - DPad down = 4
+        - DPad up = 8
 
         Arguments:
             data: Full input data from a port as bytes.
@@ -256,9 +256,9 @@ class CaptureData:
         val //= 2
         self.dpad_right = val % 2
         val //= 2
-        self.dpad_up = val % 2
-        val //= 2
         self.dpad_down = val % 2
+        val //= 2
+        self.dpad_up = val % 2
 
     def set_face_buttons(self, data: List[str]) -> None:
         """
