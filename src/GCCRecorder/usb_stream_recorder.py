@@ -3,7 +3,7 @@ import os
 import time
 from abc import ABC, abstractmethod
 
-from src.GCCRecorder.gc_conversion import Player
+from src.GCCRecorder.gc_conversion import CaptureData
 from src.GCCRecorder.usb_stream_processer import UsbStreamProcesser
 
 SLEEP_TIME = 0.01
@@ -25,13 +25,13 @@ class BasicUsbStreamRecorder(UsbStreamRecorder):
         self.processer = processer
 
     def record(self):
-        player = Player(self.context.player_port)
+        player = CaptureData(self.context.player_port)
         items = []
         epoch = None
         logger.info(f"Recording inputs from port n°{self.context.player_port}")
         logger.info(f"Opening output file : {self.context.output_file}")
         with open(self.context.output_file, "w") as fic:
-            fic.write(Player.data_format + os.linesep)
+            fic.write(CaptureData.data_format + os.linesep)
             try:
                 while True:
                     if self.context.abort_signal.is_set():
@@ -56,7 +56,7 @@ class BasicUsbStreamRecorder(UsbStreamRecorder):
                         logger.info(f"record timestamp {elmt.timestamp}")
                         player.parse_packet(elmt)
                         if not player.is_connected:
-                            logger.warning(f"Player n°{player.port} isn't connected, empty data will be written.")
+                            logger.warning(f"CaptureData n°{player.port} isn't connected, empty data will be written.")
                         fic.write(str(player) + os.linesep)
                     logger.info("pause recording")
                     time.sleep(SLEEP_TIME)

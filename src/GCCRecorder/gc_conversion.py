@@ -19,7 +19,7 @@ class PacketData:
         self.player_data: List[str] = [data, data[:9], data[9:18], data[18:27], data[27:36]]
 
 
-class Player:
+class CaptureData:
 
     data_format: str = "TIMESTAMP,A,B,X,Y,Z,START,R,R_PRESSURE,L,L_PRESSURE,LEFT_STICK_X,LEFT_STICK_Y,C_STICK_X,C_STICK_Y,DPAD_LEFT,DPAD_RIGHT,DPAD_UP,DPAD_DOWN"
 
