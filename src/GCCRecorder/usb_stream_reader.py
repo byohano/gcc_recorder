@@ -1,17 +1,8 @@
 import io
-import struct
-import time
-from threading import Thread, Event, Lock
-import queue
-from itertools import chain
-from pathlib import Path
 import logging
-import tempfile
-import shutil
-import os
+import time
 from abc import ABC, abstractmethod
-
-from src.GCCRecorder.gc_conversion import _get_endianness, PacketData, Player
+from threading import Lock
 
 SLEEP_TIME = 0.01
 

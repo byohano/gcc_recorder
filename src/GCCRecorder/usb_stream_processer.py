@@ -1,17 +1,10 @@
-import io
+import logging
 import struct
 import time
-from threading import Thread, Event, Lock
-import queue
-from itertools import chain
-from pathlib import Path
-import logging
-import tempfile
-import shutil
-import os
 from abc import ABC, abstractmethod
+from threading import Lock
 
-from src.GCCRecorder.gc_conversion import _get_endianness, PacketData, Player
+from src.GCCRecorder.gc_conversion import PacketData, _get_endianness
 from src.GCCRecorder.usb_stream_reader import UsbStreamReader
 
 SLEEP_TIME = 0.01

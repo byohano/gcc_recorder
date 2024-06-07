@@ -1,6 +1,7 @@
-from typing import List
 import struct
 import sys
+from typing import List
+
 
 def _get_endianness():
     if sys.byteorder == "little":

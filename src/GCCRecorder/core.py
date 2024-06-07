@@ -1,17 +1,8 @@
-import io
-import struct
-import time
-from threading import Thread, Event, Lock
-import queue
-from itertools import chain
-from pathlib import Path
 import logging
-import tempfile
-import shutil
-import os
+from threading import Event, Thread
 
-from src.GCCRecorder.usb_stream_reader import BasicUsbStreamReader
 from src.GCCRecorder.usb_stream_processer import BasicUsbStreamProcesser
+from src.GCCRecorder.usb_stream_reader import BasicUsbStreamReader
 from src.GCCRecorder.usb_stream_recorder import BasicUsbStreamRecorder
 
 SLEEP_TIME = 0.01

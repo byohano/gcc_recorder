@@ -17,20 +17,16 @@ Click methods:
     flag_command: Starts the application using command-line flag as input.
 """
 
-import os
 import re
 import time
 from pathlib import Path
-import questionary as qrt
-from src.GCCRecorder.core import App
-import click
-import user_interface
-
 from typing import Union
 
-#script_dir = os.path.dirname(__file__)
-#project_root = os.path.abspath(os.path.join(script_dir, os.pardir))
-#sys.path.append(project_root)
+import click
+import questionary as qrt
+
+from src.GCCRecorder.core import App
+
 
 def positive_int_validation(text: str) -> Union[str, bool]:
     """
