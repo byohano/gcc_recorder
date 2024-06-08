@@ -1,0 +1,49 @@
+[build-system]
+requires = [
+  "setuptools >= 61",
+  "setuptools_scm >= 8.0"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+dynamic = ["version"]
+name = "gcc_recorder"
+dependencies = [
+  "questionary",
+  "click"
+]
+authors = [
+  {name = "Ohayon Benjamin"}
+]
+description = "Captures USB traffic from a Gamecube-to-USB adapter"
+readme = "README.md"
+license = {file = "LICENSE"}
+keywords = ["gamecube", "adapter", "controller", "capture", "record", "macro", "packet", "usb", "snooping"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Natural Language :: English",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: Implementation :: PyPy",
+  "Topic :: System :: Hardware :: Universal Serial Bus (USB)"
+]
+
+[project.optional-dependencies]
+test = [
+  "ruff",
+  "isort",
+  "pre-commit"
+]
+
+[project.scripts]
+gcc_recorder = "src.GCCRecorder.user_interface:cli"
+
+#[project.urls]
+#Homepage = "https://example.com" # Todo
+
+[tool.setuptools.packages]
+find = {}
+
+[tool.setuptools_scm]
