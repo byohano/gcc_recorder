@@ -20,7 +20,7 @@ readme = "README.md"
 license = {file = "LICENSE"}
 keywords = ["gamecube", "adapter", "controller", "capture", "record", "macro", "packet", "usb", "snooping"]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "Environment :: Console",
   "Intended Audience :: End Users/Desktop",
   "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
@@ -40,8 +40,8 @@ test = [
 [project.scripts]
 gcc_recorder = "src.GCCRecorder.user_interface:cli"
 
-#[project.urls]
-#Homepage = "https://example.com" # Todo
+[project.urls]
+Homepage = "https://github.com/byohano/gcc_recorder"
 
 [tool.setuptools.packages]
 find = {}

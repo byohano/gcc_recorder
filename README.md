@@ -1,7 +1,5 @@
 # GameCube Controller Recorder
 
----
-
 Captures USB traffic from a GameCube-to-USB adapter.
 
 ---
@@ -48,8 +46,6 @@ Once PyPy is installed, run the following command to install the project's packa
 ---
 
 ## How to use
-
----
 
 ### Pre-requisites
 
